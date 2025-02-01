@@ -1,13 +1,14 @@
 package itstep.learning.servlets;
 
+import com.google.inject.Singleton;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-@WebServlet("/time")
+// @WebServlet("/time")
+@Singleton
 public class TimeServlet extends jakarta.servlet.http.HttpServlet {
 
     @Override

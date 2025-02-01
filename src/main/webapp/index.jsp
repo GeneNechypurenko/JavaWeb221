@@ -5,6 +5,8 @@
     </head>
 
     <body>
+        <a href="home">Home</a>
+
         <h1>JSP</h1>
 
         <h2>Вирази</h2>
