@@ -2,8 +2,12 @@ package itstep.learning.servlets;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import itstep.learning.dal.dao.DataContext;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
+import itstep.learning.services.db.DbService;
+import itstep.learning.services.hash.Md5HashService;
+import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,10 +26,17 @@ public class HomeServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
     private final RandomService randomService;
+    private final KdfService kdfService;
+    private final DbService dbService;
+    private final DataContext dataContext;
 
     @Inject
-    public HomeServlet(RandomService randomService) {
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, DataContext dataContext)
+    {
         this.randomService = randomService;
+        this.kdfService = kdfService;
+        this.dbService = dbService;
+        this.dataContext = dataContext;
     }
 
     @Override
@@ -35,15 +46,8 @@ public class HomeServlet extends HttpServlet {
         String message;
 
         try {
-            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
-            String connectionString = "jdbc:mysql://localhost:3308/java221";
-            Connection connection = DriverManager.getConnection(
-                    connectionString,
-                    "user221",
-                    "pass221");
-
             String sql = "SELECT CURRENT_TIMESTAMP";
-            Statement statement = connection.createStatement();
+            Statement statement = dbService.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
 
             resultSet.next();
@@ -53,7 +57,11 @@ public class HomeServlet extends HttpServlet {
         } catch (SQLException e) {
             message = e.getMessage();
         }
-        sendJson(resp, new RestResponse().setStatus(200).setMessage(message + "; random int: " + randomService.randomInt()));
+        String msg = dataContext.getUserDao().installTables() ? "Install OK" : "Install Failed";
+        sendJson(resp, new RestResponse()
+                .setStatus(200)
+                .setMessage(message + "; random int: " + randomService.randomInt()
+                + "; Data Context: " + msg));
     }
 
     private void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
