@@ -1,7 +1,6 @@
 package itstep.learning.ioc;
 
 import com.google.inject.AbstractModule;
-import itstep.learning.dal.dao.DataContext;
 import itstep.learning.services.datetime.CurrentDateTimeService;
 import itstep.learning.services.datetime.DateTimeService;
 import itstep.learning.services.db.DbService;

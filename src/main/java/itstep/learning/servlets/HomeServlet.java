@@ -3,10 +3,10 @@ package itstep.learning.servlets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.User;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.services.db.DbService;
-import itstep.learning.services.hash.Md5HashService;
 import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
 import jakarta.servlet.http.HttpServlet;
@@ -31,8 +31,7 @@ public class HomeServlet extends HttpServlet {
     private final DataContext dataContext;
 
     @Inject
-    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, DataContext dataContext)
-    {
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, DataContext dataContext) {
         this.randomService = randomService;
         this.kdfService = kdfService;
         this.dbService = dbService;
@@ -60,8 +59,13 @@ public class HomeServlet extends HttpServlet {
         String msg = dataContext.getUserDao().installTables() ? "Install OK" : "Install Failed";
         sendJson(resp, new RestResponse()
                 .setStatus(200)
-                .setMessage(message + "; random int: " + randomService.randomInt()
-                + "; Data Context: " + msg));
+                .setMessage(message + "; random number: " + randomService.randomInt()
+                        + "; Data Context: " + msg)
+                .setMetadata(Map.of(
+                        "dataType", "object",
+                        "read", "GET /home",
+                        "update", "PUT /home",
+                        "delete", "DELETE")));
     }
 
     private void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
@@ -89,16 +93,20 @@ public class HomeServlet extends HttpServlet {
             return;
         }
 
-        sendJson(resp, new RestResponse()
-                .setStatus(201)
-                .setMessage("Created")
-                .setMetadata(Map.of(
-                        "dataType", "object",
-                        "read", "GET /home",
-                        "update", "PUT /home",
-                        "delete", "DELETE"))
-                .setData(model)
-        );
+        User user = dataContext.getUserDao().addUser(model);
+        if (user == null) {
+            sendJson(resp, new RestResponse()
+                    .setStatus(507)
+                    .setMessage("Failed to insert user")
+                    .setData(model)
+            );
+        } else {
+            sendJson(resp, new RestResponse()
+                    .setStatus(201)
+                    .setMessage("Created")
+                    .setData(model)
+            );
+        }
     }
 
     @Override

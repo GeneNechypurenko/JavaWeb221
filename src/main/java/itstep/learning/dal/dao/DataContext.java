@@ -1,25 +1,25 @@
 package itstep.learning.dal.dao;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import itstep.learning.services.db.DbService;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 
 @Singleton
 public class DataContext {
 
-    private final Connection connection;
     private final Logger logger;
     private final UserDao userDao;
+    private final Injector injector;
 
     @Inject
-    public DataContext(DbService dbService, Logger logger) throws SQLException {
-        this.connection = dbService.getConnection();
+    public DataContext(DbService dbService, Logger logger, Injector injector) throws SQLException {
         this.logger = logger;
-        userDao = new UserDao(connection, logger);
+        this.injector = injector;
+        userDao = injector.getInstance(UserDao.class) ;
     }
 
     public UserDao getUserDao() {

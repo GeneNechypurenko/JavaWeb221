@@ -1,18 +1,31 @@
 package itstep.learning.dal.dao;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import itstep.learning.dal.dto.User;
+import itstep.learning.models.UserSignupFormModel;
+import itstep.learning.services.db.DbService;
+import itstep.learning.services.kdf.KdfService;
+
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
 import java.util.logging.Logger;
 
+@Singleton
 public class UserDao {
 
     private final Connection connection;
     private final Logger logger;
+    private final KdfService kdfService;
 
-    public UserDao(Connection connection, Logger logger) {
-        this.connection = connection;
+    @Inject
+    public UserDao(DbService dbService, Logger logger, KdfService kdfService) throws SQLException {
+        this.connection = dbService.getConnection();
         this.logger = logger;
+        this.kdfService = kdfService;
     }
 
     public boolean installTables() {
@@ -58,4 +71,57 @@ public class UserDao {
         return false;
     }
 
+    public User addUser(UserSignupFormModel userModel) {
+
+        User user = new User();
+        user.setUserId(UUID.randomUUID());
+        user.setName(userModel.getName());
+        user.setEmail(userModel.getEmails().get(0));
+        user.setPhone(userModel.getPhones().get(0));
+
+        String sql = "INSERT INTO users (user_id, name, email, phone) "
+                + "VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement prep = this.connection.prepareStatement(sql)) {
+            prep.setString(1, user.getUserId().toString());
+            prep.setString(2, user.getName());
+            prep.setString(3, user.getEmail());
+            prep.setString(4, user.getPhone());
+            this.connection.setAutoCommit(false);
+            prep.executeUpdate();
+
+        } catch (SQLException e) {
+            logger.warning("UserDao::adduser" + e.getMessage());
+            try {
+                this.connection.rollback();
+            } catch (SQLException ignore) {
+            }
+            return null;
+        }
+
+        sql = "INSERT INTO users_access (user_access_id, user_id, role_id, login, salt, dk) "
+                + "VALUES (UUID(), ?, 'guest', ?, ?, ?)";
+
+        try (PreparedStatement prep = this.connection.prepareStatement(sql)) {
+            prep.setString(1, user.getUserId().toString());
+            prep.setString(2, user.getEmail());
+
+            String salt = UUID.randomUUID().toString().substring(0, 16);
+            prep.setString(3, salt);
+            prep.setString(4, kdfService.dk(userModel.getPassword(), salt));
+
+            prep.executeUpdate();
+            this.connection.commit();
+
+        } catch (SQLException e) {
+            logger.warning("UserDao::adduser" + e.getMessage());
+            try {
+                this.connection.rollback();
+            } catch (SQLException ignore) {
+            }
+            return null;
+        }
+
+        return user;
+    }
 }
