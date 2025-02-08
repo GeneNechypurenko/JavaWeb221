@@ -29,7 +29,7 @@ public class UserDao {
     }
 
     public boolean installTables() {
-        return installUsers() && installUsersAccess();
+        return installUsers() && installUsersAccess() && installUserRoles() && insertDefaultRoles();
     }
 
     private boolean installUsers() {
@@ -67,6 +67,43 @@ public class UserDao {
             return true;
         } catch (SQLException e) {
             logger.warning("UserDao::installUsersAccess: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private boolean installUserRoles() {
+        String sql = "CREATE TABLE IF NOT EXISTS user_roles ("
+                + "id VARCHAR(16) PRIMARY KEY,"
+                + "description VARCHAR(255) NOT NULL,"
+                + "canCreate BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "canRead BOOLEAN NOT NULL DEFAULT TRUE,"
+                + "canUpdate BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "canDelete BOOLEAN NOT NULL DEFAULT FALSE"
+                + ") Engine = InnoDB, DEFAULT CHARSET = utf8mb4";
+
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+            logger.info("UserDao::installUserRoles: OK");
+            return true;
+        } catch (SQLException e) {
+            logger.warning("UserDao::installUserRoles: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private boolean insertDefaultRoles() {
+        String sql = "INSERT INTO user_roles (id, description, canCreate, canRead, canUpdate, canDelete) VALUES "
+                + "('admin', 'Administrator', TRUE, TRUE, TRUE, TRUE),"
+                + "('guest', 'Guest', FALSE, TRUE, FALSE, FALSE),"
+                + "('moder', 'Moderator', FALSE, TRUE, TRUE, FALSE) "
+                + "ON DUPLICATE KEY UPDATE id = id;";
+
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+            logger.info("UserDao::insertDefaultRoles: OK");
+            return true;
+        } catch (SQLException e) {
+            logger.warning("UserDao::insertDefaultRoles: " + e.getMessage());
         }
         return false;
     }
