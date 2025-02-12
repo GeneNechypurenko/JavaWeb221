@@ -1,8 +1,7 @@
 package itstep.learning.ioc;
 
 import com.google.inject.servlet.ServletModule;
-import itstep.learning.servlets.HomeServlet;
-import itstep.learning.servlets.TimeServlet;
+import itstep.learning.servlets.*;
 
 public class ServletConfig extends ServletModule {
 
@@ -10,5 +9,6 @@ public class ServletConfig extends ServletModule {
     protected void configureServlets() {
         serve("/home").with(HomeServlet.class);
         serve("/time").with(TimeServlet.class);
+        serve("/user").with(UserServlet.class);
     }
 }

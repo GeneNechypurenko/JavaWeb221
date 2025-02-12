@@ -8,6 +8,8 @@ import java.util.Random;
 @Singleton
 public class UtilRandomService implements RandomService {
     private final Random rand;
+    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String FILESAFE_ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
     @Inject
     public UtilRandomService(DateTimeService dateTimeService) {
@@ -17,5 +19,23 @@ public class UtilRandomService implements RandomService {
     @Override
     public int randomInt() {
         return rand.nextInt();
+    }
+
+    @Override
+    public String randomString(int length) {
+        return generateRandomString(length, ALPHANUMERIC);
+    }
+
+    @Override
+    public String randomFileName(int length) {
+        return generateRandomString(length, FILESAFE_ALPHANUMERIC);
+    }
+
+    private String generateRandomString(int length, String charset) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(charset.charAt(rand.nextInt(charset.length())));
+        }
+        return sb.toString();
     }
 }
