@@ -71,7 +71,6 @@ public class HomeServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String body = new String(req.getInputStream().readAllBytes());
 
         RestResponse restResponse = new RestResponse()
                 .setResourceUrl("POST /home")
@@ -80,7 +79,7 @@ public class HomeServlet extends HttpServlet {
         UserSignupFormModel model;
 
         try {
-            model = restService.fromJson(body, UserSignupFormModel.class);
+            model = restService.fromBody(req, UserSignupFormModel.class);
         } catch (Exception e) {
             restService.sendJson(resp, restResponse.setStatus(422).setMessage(e.getMessage()));
             return;

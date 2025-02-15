@@ -6,6 +6,9 @@
 
     <body>
         <a href="home">Home</a>
+        <a href="time">Time</a>
+        <a href="random">Random</a>
+        <a href="user">User</a>
 
         <h1>JSP</h1>
 

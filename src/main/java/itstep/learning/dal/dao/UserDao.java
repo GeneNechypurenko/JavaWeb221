@@ -7,10 +7,8 @@ import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.kdf.KdfService;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -18,11 +16,13 @@ import java.util.logging.Logger;
 public class UserDao {
 
     private final Connection connection;
+    private final DbService dbService;
     private final Logger logger;
     private final KdfService kdfService;
 
     @Inject
-    public UserDao(DbService dbService, Logger logger, KdfService kdfService) throws SQLException {
+    public UserDao(DbService dbService, DbService dbService1, Logger logger, KdfService kdfService) throws SQLException {
+        this.dbService = dbService1;
         this.connection = dbService.getConnection();
         this.logger = logger;
         this.kdfService = kdfService;
@@ -160,5 +160,28 @@ public class UserDao {
         }
 
         return user;
+    }
+
+    public User authorize(String login, String password) {
+        String sql =
+                "SELECT * FROM users_access ua " +
+                "JOIN users u ON ua.user_id =  u.user_id " +
+                "WHERE ua.login = ?";
+
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setString(1, login);
+            ResultSet rs = prep.executeQuery();
+
+            if(rs.next()){
+                String dk = kdfService.dk(password, rs.getString("salt"));
+
+                if(Objects.equals(dk, rs.getString("dk"))){
+                    return User.fromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warning("UserDao::authorize {0}" + e.getMessage());
+        }
+        return null;
     }
 }

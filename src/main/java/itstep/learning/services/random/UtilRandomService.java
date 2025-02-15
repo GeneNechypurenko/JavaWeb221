@@ -38,4 +38,13 @@ public class UtilRandomService implements RandomService {
         }
         return sb.toString();
     }
+
+    @Override
+    public String generateRandomStringByType(String type, int length) {
+        return switch (type.toLowerCase()) {
+            case "salt" -> randomString(length);
+            case "filename" -> randomFileName(length);
+            default -> throw new IllegalArgumentException("Unknown type: " + type);
+        };
+    }
 }

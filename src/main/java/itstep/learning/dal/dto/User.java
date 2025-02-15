@@ -1,5 +1,7 @@
 package itstep.learning.dal.dto;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class User {
@@ -7,6 +9,15 @@ public class User {
     private String name;
     private String email;
     private String phone;
+
+    public static User fromResultSet(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.userId = UUID.fromString(rs.getString("user_id"));
+        user.name = rs.getString("name");
+        user.email = rs.getString("email");
+        user.phone = rs.getString("phone");
+        return user;
+    }
 
     public UUID getUserId() {
         return userId;

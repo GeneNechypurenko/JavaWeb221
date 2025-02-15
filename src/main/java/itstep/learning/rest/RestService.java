@@ -1,8 +1,10 @@
 package itstep.learning.rest;
 
 import com.google.gson.Gson;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class RestService {
 
@@ -21,5 +23,13 @@ public class RestService {
 
     public <T> T fromJson(String json, Class<T> classOfT) {
        return gson.fromJson(json, classOfT);
+    }
+
+    public <T> T fromBody(HttpServletRequest req, Class<T> classOfT) throws IOException {
+        String charsetName = req.getCharacterEncoding();
+        if(charsetName == null) {
+            charsetName = StandardCharsets.UTF_8.name();
+        }
+        return gson.fromJson(new String(req.getInputStream().readAllBytes(), charsetName), classOfT);
     }
 }
