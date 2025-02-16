@@ -113,31 +113,39 @@ public class UserDao {
         User user = new User();
         user.setUserId(UUID.randomUUID());
         user.setName(userModel.getName());
-        user.setEmail(userModel.getEmails().get(0));
-        user.setPhone(userModel.getPhones().get(0));
+        user.setEmail(userModel.getEmail());
+        user.setPhone(userModel.getPhone());
+        user.setAge(userModel.getAge());
+        user.setActive(userModel.isActive());
+        user.setBalance(userModel.getBalance());
+        user.setBirthDate(userModel.getBirthDate());
+        user.setCreatedAt(System.currentTimeMillis());
 
-        String sql = "INSERT INTO users (user_id, name, email, phone) "
-                + "VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users (user_id, name, email, phone, age, is_active, balance, birth_date, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement prep = this.connection.prepareStatement(sql)) {
             prep.setString(1, user.getUserId().toString());
             prep.setString(2, user.getName());
             prep.setString(3, user.getEmail());
             prep.setString(4, user.getPhone());
+            prep.setInt(5, user.getAge());
+            prep.setBoolean(6, user.isActive());
+            prep.setDouble(7, user.getBalance());
+            prep.setString(8, user.getBirthDate());
+            prep.setLong(9, user.getCreatedAt());
             this.connection.setAutoCommit(false);
             prep.executeUpdate();
-
         } catch (SQLException e) {
-            logger.warning("UserDao::adduser" + e.getMessage());
+            logger.warning("UserDao::addUser " + e.getMessage());
             try {
                 this.connection.rollback();
-            } catch (SQLException ignore) {
-            }
+            } catch (SQLException ignore) {}
             return null;
         }
 
         sql = "INSERT INTO users_access (user_access_id, user_id, role_id, login, salt, dk) "
-                + "VALUES (UUID(), ?, 'guest', ?, ?, ?)";
+                + "VALUES (UUID(), ?, 'user', ?, ?, ?)";
 
         try (PreparedStatement prep = this.connection.prepareStatement(sql)) {
             prep.setString(1, user.getUserId().toString());
@@ -149,13 +157,11 @@ public class UserDao {
 
             prep.executeUpdate();
             this.connection.commit();
-
         } catch (SQLException e) {
-            logger.warning("UserDao::adduser" + e.getMessage());
+            logger.warning("UserDao::addUser " + e.getMessage());
             try {
                 this.connection.rollback();
-            } catch (SQLException ignore) {
-            }
+            } catch (SQLException ignore) {}
             return null;
         }
 

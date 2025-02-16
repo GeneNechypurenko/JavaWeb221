@@ -1,16 +1,19 @@
 package itstep.learning.models;
 
-import java.util.Date;
-import java.util.List;
+import java.sql.Date;
 
 public class UserSignupFormModel {
     private String name;
-    private List<String> emails;
+    private String email;
     private String login;
     private String city;
-    private List<String> phones;
+    private String phone;
     private String password;
-    private Date birthDate;
+    private String birthDate;
+    private int age;
+    private boolean isActive;
+    private double balance;
+    private long createdAt;
 
     public String getName() {
         return name;
@@ -20,12 +23,12 @@ public class UserSignupFormModel {
         this.name = name;
     }
 
-    public List<String> getEmails() {
-        return emails;
+    public String getEmail() {
+        return email;
     }
 
-    public void setEmails(List<String> emails) {
-        this.emails = emails;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getLogin() {
@@ -44,12 +47,12 @@ public class UserSignupFormModel {
         this.city = city;
     }
 
-    public List<String> getPhones() {
-        return phones;
+    public String getPhone() {
+        return phone;
     }
 
-    public void setPhones(List<String> phones) {
-        this.phones = phones;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getPassword() {
@@ -60,11 +63,43 @@ public class UserSignupFormModel {
         this.password = password;
     }
 
-    public Date getBirthDate() {
+    public String getBirthDate() {
         return birthDate;
     }
 
-    public void setBirthDate(Date birthDate) {
+    public void setBirthDate(String birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+
+    public void setBalance(double balance) {
+        this.balance = balance;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 }
