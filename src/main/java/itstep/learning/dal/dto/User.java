@@ -2,6 +2,7 @@ package itstep.learning.dal.dto;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.UUID;
 
 public class User {
@@ -9,11 +10,12 @@ public class User {
     private String name;
     private String email;
     private String phone;
-    private int age;
+    private Integer age;
     private boolean isActive;
-    private double balance;
+    private Double balance;
     private String birthDate;
     private long createdAt;
+    private Date deletedAt;
 
     public static User fromResultSet(ResultSet rs) throws SQLException {
         User user = new User();
@@ -26,6 +28,8 @@ public class User {
         user.balance = rs.getDouble("balance");
         user.birthDate = rs.getString("birth_date");
         user.createdAt = rs.getLong("created_at");
+        java.sql.Timestamp timestamp = rs.getTimestamp( "deleted_at" ) ;
+        user.setDeletedAt(timestamp == null ? null : new Date( timestamp.getTime() ));
         return user;
     }
 
@@ -42,18 +46,26 @@ public class User {
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public int getAge() { return age; }
-    public void setAge(int age) { this.age = age; }
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
 
-    public double getBalance() { return balance; }
-    public void setBalance(double balance) { this.balance = balance; }
+    public Double getBalance() { return balance; }
+    public void setBalance(Double balance) { this.balance = balance; }
 
     public String getBirthDate() { return birthDate; }
     public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
+    public Date getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Date deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 }

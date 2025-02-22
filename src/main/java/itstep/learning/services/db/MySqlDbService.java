@@ -16,6 +16,7 @@ public class MySqlDbService implements DbService {
             MysqlDataSource mds = new MysqlDataSource();
             mds.setURL("jdbc:mysql://localhost:3308/java221");
             connection = mds.getConnection("user221", "pass221");
+            connection.setAutoCommit(false);
         }
         return connection;
     }

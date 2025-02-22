@@ -54,7 +54,11 @@ public class HomeServlet extends HttpServlet {
         } catch (SQLException e) {
             message = e.getMessage();
         }
-        String msg = dataContext.getUserDao().installTables() ? "Install OK" : "Install Failed";
+
+        String msg = dataContext.getUserDao().installTables()
+                && dataContext.getAccessTokenDao().installTables()
+                ? "Install OK" : "Install Failed";
+
         restService.sendJson(resp, new RestResponse()
                 .setStatus(200)
                 .setMessage(message

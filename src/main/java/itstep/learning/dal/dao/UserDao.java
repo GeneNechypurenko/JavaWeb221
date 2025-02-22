@@ -8,8 +8,13 @@ import itstep.learning.services.db.DbService;
 import itstep.learning.services.kdf.KdfService;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 @Singleton
@@ -29,7 +34,26 @@ public class UserDao {
     }
 
     public boolean installTables() {
-        return installUsers() && installUsersAccess() && installUserRoles() && insertDefaultRoles();
+        Future<Boolean> taskUsers = CompletableFuture.supplyAsync((this::installUsers));
+//                .thenApply(b -> { return 1; })
+//                .thenApply(i -> true);
+        Future<Boolean> taskUsersAccess = CompletableFuture.supplyAsync((this::installUsersAccess));
+        Future<Boolean> taskUserRoles = CompletableFuture.supplyAsync((this::installUserRoles));
+        Future<Boolean> taskDefaultRoles = CompletableFuture.supplyAsync((this::insertDefaultRoles));
+
+        try {
+            boolean resUsers = taskUsers.get();
+            boolean resUserAccess = taskUsersAccess.get();
+            boolean resUserRoles = taskUserRoles.get();
+            boolean resDefaultRoles = taskDefaultRoles.get();
+            try {
+                dbService.getConnection().commit();
+            } catch (SQLException ignored) {
+            }
+            return resUsers && resUserAccess && resUserRoles && resDefaultRoles;
+        } catch (ExecutionException | InterruptedException ignore) {
+            return false;
+        }
     }
 
     private boolean installUsers() {
@@ -37,7 +61,8 @@ public class UserDao {
                 + "user_id CHAR(36) PRIMARY KEY DEFAULT(UUID()),"
                 + "name VARCHAR(128) NOT NULL,"
                 + "email VARCHAR(265) NULL,"
-                + "phone VARCHAR(32) NULL"
+                + "phone VARCHAR(32) NULL,"
+                + "deleted_at DATETIME NULL"
                 + ") Engine = InnoDB, DEFAULT CHARSET = utf8mb4";
 
         try (Statement statement = connection.createStatement()) {
@@ -58,6 +83,7 @@ public class UserDao {
                 + "login VARCHAR(128) NOT NULL,"
                 + "salt CHAR(16) NOT NULL,"
                 + "dk CHAR(20) NOT NULL,"
+                + "ua_delete_dt DATETIME NULL,"
                 + "UNIQUE(login)"
                 + ") Engine = InnoDB, DEFAULT CHARSET = utf8mb4";
 
@@ -134,13 +160,14 @@ public class UserDao {
             prep.setDouble(7, user.getBalance());
             prep.setString(8, user.getBirthDate());
             prep.setLong(9, user.getCreatedAt());
-            this.connection.setAutoCommit(false);
+            // this.connection.setAutoCommit(false);
             prep.executeUpdate();
         } catch (SQLException e) {
-            logger.warning("UserDao::addUser " + e.getMessage());
+            logger.warning("UserDao::addUser: " + e.getMessage());
             try {
                 this.connection.rollback();
-            } catch (SQLException ignore) {}
+            } catch (SQLException ignore) {
+            }
             return null;
         }
 
@@ -158,10 +185,11 @@ public class UserDao {
             prep.executeUpdate();
             this.connection.commit();
         } catch (SQLException e) {
-            logger.warning("UserDao::addUser " + e.getMessage());
+            logger.warning("UserDao::addUser: " + e.getMessage());
             try {
                 this.connection.rollback();
-            } catch (SQLException ignore) {}
+            } catch (SQLException ignore) {
+            }
             return null;
         }
 
@@ -171,23 +199,146 @@ public class UserDao {
     public User authorize(String login, String password) {
         String sql =
                 "SELECT * FROM users_access ua " +
-                "JOIN users u ON ua.user_id =  u.user_id " +
-                "WHERE ua.login = ?";
+                        "JOIN users u ON ua.user_id =  u.user_id " +
+                        "WHERE ua.login = ?";
 
         try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
             prep.setString(1, login);
             ResultSet rs = prep.executeQuery();
 
-            if(rs.next()){
+            if (rs.next()) {
                 String dk = kdfService.dk(password, rs.getString("salt"));
 
-                if(Objects.equals(dk, rs.getString("dk"))){
+                if (Objects.equals(dk, rs.getString("dk"))) {
                     return User.fromResultSet(rs);
                 }
             }
         } catch (SQLException e) {
-            logger.warning("UserDao::authorize {0}" + e.getMessage());
+            logger.warning("UserDao::authorize: " + e.getMessage());
         }
         return null;
+    }
+
+    public User getUserById(String id) {
+
+        UUID uuid;
+
+        try {
+            uuid = UUID.fromString(id);
+
+        } catch (IllegalArgumentException e) {
+            logger.warning("UserDao::getUserById::String: " + e.getMessage());
+            return null;
+        }
+        return getUserById(uuid);
+    }
+
+    public User getUserById(UUID uuid) {
+
+        String sql = String.format(
+                "SELECT u.* FROM users u WHERE u.user_id = '%s'",
+                uuid.toString()
+        );
+
+        try (Statement stmt = dbService.getConnection().createStatement()) {
+            ResultSet rs = stmt.executeQuery(sql);
+
+            if (rs.next()) {
+                return User.fromResultSet(rs);
+            }
+
+        } catch (Exception e) {
+            logger.warning("UserDao::getUserById::UUID: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public boolean updateUser(User user) {
+        Map<String, Object> data = new HashMap<>();
+
+        if (user.getName() != null) data.put("name", user.getName());
+        if (user.getEmail() != null) data.put("email", user.getEmail());
+        if (user.getPhone() != null) data.put("phone", user.getPhone());
+        if (user.getAge() != null) data.put("age", user.getAge());
+        if (user.getBalance() != null) data.put("balance", user.getBalance());
+        if (user.getBirthDate() != null) data.put("birth_date", user.getBirthDate());
+        data.put("is_active", user.isActive());
+
+        if (data.isEmpty()) return true;
+
+        StringBuilder sql = new StringBuilder("UPDATE users SET ");
+        boolean first = true;
+
+        for (String key : data.keySet()) {
+            if (!first) sql.append(", ");
+            sql.append(key).append(" = ?");
+            first = false;
+        }
+        sql.append(" WHERE user_id = ?");
+
+        try (PreparedStatement stmt = dbService.getConnection().prepareStatement(sql.toString())) {
+            int index = 1;
+            for (Object value : data.values()) {
+                if (value instanceof Integer) {
+                    stmt.setInt(index, (Integer) value);
+                } else if (value instanceof Boolean) {
+                    stmt.setBoolean(index, (Boolean) value);
+                } else if (value instanceof Double) {
+                    stmt.setDouble(index, (Double) value);
+                } else {
+                    stmt.setString(index, value.toString());
+                }
+                index++;
+            }
+            stmt.setString(index, user.getUserId().toString());
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.warning("UserDao::updateUser: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public CompletableFuture deleteUserAsync(User user) {
+        String sql1 = String.format(
+                "UPDATE users SET deleted_at = CURRENT_TIMESTAMP,"
+                        + " name = '', email = NULL, phone = NULL WHERE user_id = '%s'",
+                user.getUserId().toString());
+
+        String sql2 = String.format(
+                "UPDATE users_access SET ua_delete_dt = CURRENT_TIMESTAMP,"
+                        + " login = UUID WHERE user_id = '%s'",
+                user.getUserId().toString());
+
+        CompletableFuture<Void> task1 = CompletableFuture.runAsync(() -> {
+            try (Statement stmt = dbService.getConnection().createStatement()) {
+                stmt.execute(sql1);
+            } catch (SQLException e) {
+                logger.warning("UserDao::deleteUserAsync::user: " + e.getMessage());
+                try {
+                    dbService.getConnection().rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+        });
+
+        CompletableFuture<Void> task2 = CompletableFuture.runAsync(() -> {
+            try (Statement stmt = dbService.getConnection().createStatement()) {
+                stmt.execute(sql2);
+            } catch (SQLException e) {
+                logger.warning("UserDao::deleteUser::user_access: " + e.getMessage());
+                try {
+                    dbService.getConnection().rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+        });
+
+        return CompletableFuture.allOf(task1, task2).thenRun(() -> {
+            try {
+                dbService.getConnection().commit();
+            } catch (SQLException ignored) {
+            }
+        });
     }
 }

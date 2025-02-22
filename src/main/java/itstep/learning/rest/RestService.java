@@ -19,6 +19,7 @@ public class RestService {
     public void setCorsHeader(HttpServletResponse resp) {
         resp.setHeader("Access-Control-Allow-Origin", "*");
         resp.setHeader("Access-Control-Allow-Headers", "content-type, authorization");
+        resp.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     }
 
     public <T> T fromJson(String json, Class<T> classOfT) {
