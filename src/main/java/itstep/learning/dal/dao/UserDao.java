@@ -320,47 +320,41 @@ public class UserDao {
         });
     }
 
+    public CompletableFuture<Void> deleteUserAsync(User user) {
 
-    public CompletableFuture deleteUserAsync(User user) {
-        String sql1 = String.format(
-                "UPDATE users SET deleted_at = CURRENT_TIMESTAMP,"
-                        + " name = '', email = NULL, phone = NULL WHERE user_id = '%s'",
-                user.getUserId().toString());
+        String sql1 = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP," +
+                " name = ''," +
+                " email = NULL," +
+                " phone = NULL," +
+                " age = 0," +
+                " birth_date = CURRENT_TIMESTAMP," +
+                " is_active = 0" +
+                " WHERE user_id = ?";
+        String sql2 = "UPDATE users_access SET ua_delete_dt = CURRENT_TIMESTAMP, login = '' WHERE user_id = ?";
 
-        String sql2 = String.format(
-                "UPDATE users_access SET ua_delete_dt = CURRENT_TIMESTAMP,"
-                        + " login = UUID WHERE user_id = '%s'",
-                user.getUserId().toString());
+        CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
+            try (Connection connection = dbService.getConnection()) {
 
-        CompletableFuture<Void> task1 = CompletableFuture.runAsync(() -> {
-            try (Statement stmt = dbService.getConnection().createStatement()) {
-                stmt.execute(sql1);
+                try (PreparedStatement stmt1 = connection.prepareStatement(sql1)) {
+                    stmt1.setString(1, user.getUserId().toString());
+                    stmt1.executeUpdate();
+                }
+
+                try (PreparedStatement stmt2 = connection.prepareStatement(sql2)) {
+                    stmt2.setString(1, user.getUserId().toString());
+                    stmt2.executeUpdate();
+                }
+
+                connection.commit();
             } catch (SQLException e) {
-                logger.warning("UserDao::deleteUserAsync::user: " + e.getMessage());
+                logger.warning("Error in deleting user: " + e.getMessage());
                 try {
-                    dbService.getConnection().rollback();
+                    connection.rollback();
                 } catch (SQLException ignored) {
                 }
             }
         });
 
-        CompletableFuture<Void> task2 = CompletableFuture.runAsync(() -> {
-            try (Statement stmt = dbService.getConnection().createStatement()) {
-                stmt.execute(sql2);
-            } catch (SQLException e) {
-                logger.warning("UserDao::deleteUser::user_access: " + e.getMessage());
-                try {
-                    dbService.getConnection().rollback();
-                } catch (SQLException ignored) {
-                }
-            }
-        });
-
-        return CompletableFuture.allOf(task1, task2).thenRun(() -> {
-            try {
-                dbService.getConnection().commit();
-            } catch (SQLException ignored) {
-            }
-        });
+        return task;
     }
 }
