@@ -253,51 +253,73 @@ public class UserDao {
         return null;
     }
 
-    public boolean updateUser(User user) {
-        Map<String, Object> data = new HashMap<>();
+    public CompletableFuture<Boolean> updateUserAsync(User user) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> data = new HashMap<>();
 
-        if (user.getName() != null) data.put("name", user.getName());
-        if (user.getEmail() != null) data.put("email", user.getEmail());
-        if (user.getPhone() != null) data.put("phone", user.getPhone());
-        if (user.getAge() != null) data.put("age", user.getAge());
-        if (user.getBalance() != null) data.put("balance", user.getBalance());
-        if (user.getBirthDate() != null) data.put("birth_date", user.getBirthDate());
-        data.put("is_active", user.isActive());
+            if (user.getName() != null) data.put("name", user.getName());
+            if (user.getEmail() != null) data.put("email", user.getEmail());
+            if (user.getPhone() != null) data.put("phone", user.getPhone());
+            if (user.getAge() != null) data.put("age", user.getAge());
+            if (user.getBalance() != null) data.put("balance", user.getBalance());
+            if (user.getBirthDate() != null) data.put("birth_date", user.getBirthDate());
+            data.put("is_active", user.isActive());
 
-        if (data.isEmpty()) return true;
+            if (data.isEmpty()) return true;
 
-        StringBuilder sql = new StringBuilder("UPDATE users SET ");
-        boolean first = true;
+            StringBuilder sql = new StringBuilder("UPDATE users SET ");
+            boolean first = true;
 
-        for (String key : data.keySet()) {
-            if (!first) sql.append(", ");
-            sql.append(key).append(" = ?");
-            first = false;
-        }
-        sql.append(" WHERE user_id = ?");
-
-        try (PreparedStatement stmt = dbService.getConnection().prepareStatement(sql.toString())) {
-            int index = 1;
-            for (Object value : data.values()) {
-                if (value instanceof Integer) {
-                    stmt.setInt(index, (Integer) value);
-                } else if (value instanceof Boolean) {
-                    stmt.setBoolean(index, (Boolean) value);
-                } else if (value instanceof Double) {
-                    stmt.setDouble(index, (Double) value);
-                } else {
-                    stmt.setString(index, value.toString());
-                }
-                index++;
+            for (String key : data.keySet()) {
+                if (!first) sql.append(", ");
+                sql.append(key).append(" = ?");
+                first = false;
             }
-            stmt.setString(index, user.getUserId().toString());
+            sql.append(" WHERE user_id = ?");
 
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            logger.warning("UserDao::updateUser: " + e.getMessage());
-            return false;
-        }
+            final String query = sql.toString();
+            final String sqlAccess = "UPDATE users_access SET login = ? WHERE user_id = ?";
+
+            try {
+                try (PreparedStatement prep = connection.prepareStatement(query)) {
+                    int index = 1;
+                    for (Object value : data.values()) {
+                        prep.setObject(index++, value);
+                    }
+                    prep.setString(index, user.getUserId().toString());
+
+                    if (prep.executeUpdate() <= 0) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                if (user.getEmail() != null) {
+                    try (PreparedStatement prep = connection.prepareStatement(sqlAccess)) {
+                        prep.setString(1, user.getEmail());
+                        prep.setString(2, user.getUserId().toString());
+
+                        if (prep.executeUpdate() <= 0) {
+                            connection.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                connection.commit();
+                return true;
+
+            } catch (SQLException e) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ignored) {
+                }
+                logger.warning("UserDao::updateUser: " + e.getMessage());
+                return false;
+            }
+        });
     }
+
 
     public CompletableFuture deleteUserAsync(User user) {
         String sql1 = String.format(

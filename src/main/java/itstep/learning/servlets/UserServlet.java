@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
 import itstep.learning.dal.dto.User;
-import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
 import jakarta.servlet.ServletException;
@@ -16,7 +15,6 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 @Singleton
@@ -120,7 +118,7 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
-        if (!dataContext.getUserDao().updateUser(userUpdated)) {
+        if (!dataContext.getUserDao().updateUserAsync(userUpdated).join()) {
             restService.sendJson(resp, restResponse.setStatus(500).setMessage("Server error. See logs for details"));
             return;
         }
