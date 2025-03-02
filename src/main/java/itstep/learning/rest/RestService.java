@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class RestService {
 
-    private final Gson gson = new Gson();
+    public final Gson gson = new Gson();
 
     public void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
         resp.setContentType("application/json");

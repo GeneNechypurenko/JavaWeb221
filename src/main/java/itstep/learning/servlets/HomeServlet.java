@@ -7,6 +7,7 @@ import itstep.learning.dal.dto.User;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
+import itstep.learning.services.config.ConfigService;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.random.RandomService;
 import jakarta.servlet.http.HttpServlet;
@@ -27,13 +28,15 @@ public class HomeServlet extends HttpServlet {
     private final DbService dbService;
     private final DataContext dataContext;
     private final RestService restService;
+    private final ConfigService configService;
 
     @Inject
-    public HomeServlet(RandomService randomService, DbService dbService, DataContext dataContext, RestService restService) {
+    public HomeServlet(RandomService randomService, DbService dbService, DataContext dataContext, RestService restService, ConfigService configService) {
         this.randomService = randomService;
         this.dbService = dbService;
         this.dataContext = dataContext;
         this.restService = restService;
+        this.configService = configService;
     }
 
     @Override
@@ -65,6 +68,7 @@ public class HomeServlet extends HttpServlet {
                         + "; Random Number: " + randomService.randomInt()
                         + "; Random String: " + randomService.randomString(10)
                         + "; Random File Name: " + randomService.randomFileName(10)
+                        + "; Config Service - port: " + configService.getValue("db:MySql:port")
                         + "; Data Context: " + msg)
                 .setMetadata(Map.of(
                         "dataType", "object",

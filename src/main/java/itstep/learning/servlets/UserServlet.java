@@ -3,9 +3,14 @@ package itstep.learning.servlets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.AccessToken;
 import itstep.learning.dal.dto.User;
+import itstep.learning.dal.dto.UserAccess;
+import itstep.learning.models.UserAuthJwtModel;
+import itstep.learning.models.UserAuthViewModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
+import itstep.learning.services.hash.HashService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,12 +28,14 @@ public class UserServlet extends HttpServlet {
     private final DataContext dataContext;
     private final RestService restService;
     private final Logger logger;
+    private final HashService hashService;
 
     @Inject
-    public UserServlet(DataContext dataContext, RestService restService, Logger logger) {
+    public UserServlet(DataContext dataContext, RestService restService, Logger logger, HashService hashService) {
         this.dataContext = dataContext;
         this.restService = restService;
         this.logger = logger;
+        this.hashService = hashService;
     }
 
     @Override
@@ -73,14 +80,31 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
-        User user = dataContext.getUserDao().authorize(parts[0], parts[1]);
+        UserAccess userAccess = dataContext.getUserDao().authorize(parts[0], parts[1]);
 
-        if (user == null) {
+        if (userAccess == null) {
             restService.sendJson(resp, restResponse.setStatus(401).setData("Credentials rejected"));
             return;
         }
 
-        restResponse.setStatus(200).setData(user);
+        AccessToken token = dataContext.getAccessTokenDao().createAccessToken(userAccess);
+        User user = dataContext.getUserDao().getUserById(userAccess.getUserId());
+
+        String jwtHeader = new String(Base64.getUrlEncoder().encode(
+                "{\"alg\": \"HS256\", \"typ\": \"JWT\" }".getBytes())
+        );
+        String jwtPayload = new String(Base64.getUrlEncoder().encode(
+                restService.gson.toJson(userAccess).getBytes())
+        );
+        String jwtSignature = new String(Base64.getUrlEncoder().encode(
+                hashService.digest("secret" + jwtHeader + "." + jwtPayload).getBytes())
+        );
+        String jwtToken = jwtHeader + "." + jwtPayload + "." + jwtSignature;
+
+        restResponse.setStatus(200)
+                .setData(new UserAuthViewModel(user, userAccess, token))
+                // .setData(new UserAuthJwtModel(user, jwtToken))
+                .setCacheTime(600);
         restService.sendJson(resp, restResponse);
     }
 
@@ -96,6 +120,15 @@ public class UserServlet extends HttpServlet {
                                 "update", "PUT /user",
                                 "delete", "DELETE /user"
                         ));
+
+        UserAccess userAccess = (UserAccess) req.getAttribute("authUserAccess");
+
+        if (userAccess == null) {
+            restService.sendJson(resp,
+                    restResponse.setStatus(401)
+                            .setData(req.getAttribute("authStatus")));
+            return;
+        }
 
         User userUpdated;
 
