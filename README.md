@@ -10,20 +10,20 @@
 
 3. Open appsettings.json and replace the placeholder values with your actual database credentials:
 
-`{`
-`    "db": {`
-`        "MySql": {`
-`        "host": "localhost",`
-`        "port": 3306,`
-`        "database": "replace_with_your_database_schema_name_here",`
-`        "user": "replace_with_your_user_name_here",`
-`        "password": "replace_with_your_user_password_here"`
-`        }`
-`    },`
-`    "token": {`
-`        "lifetime": 300`
-`    }`
-`}`
+`{
+    "db": {
+       "MySql": {
+       "host": "localhost",
+        "port": 3306,
+        "database": "replace_with_your_database_schema_name_here",
+        "user": "replace_with_your_user_name_here",
+        "password": "replace_with_your_user_password_here"
+        }
+    },
+    "token": {
+        "lifetime": 300
+    }
+}`
 
 4. Do not commit appsettings.json to the repository. It contains sensitive credentials.
 
