@@ -29,10 +29,10 @@ public class ProductServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         FormParseResult formParseResult = formParseService.parseRequest(req);
-        resp.getWriter().print(
-                String.join(" ", formParseResult.getFiles().keySet()) + " " +
-                        String.join(" ", formParseResult.getFields().keySet())
-        );
+//        resp.getWriter().print(
+//                String.join(" ", formParseResult.getFiles().keySet()) + " " +
+//                        String.join(" ", formParseResult.getFields().keySet())
+//        );
 
         FileItem file1 = formParseResult.getFiles().get("file1");
         String message;

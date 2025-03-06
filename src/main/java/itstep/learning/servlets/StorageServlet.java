@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,10 +25,27 @@ public class StorageServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String fileId = req.getPathInfo().substring(1);
 
-        try (InputStream reader = storageService.get(fileId)) {
+        if (fileId == null || fileId.isEmpty()) {
+            resp.setStatus(400);
+            resp.getWriter().write("fileId cannot be empty");
+            return;
+        }
 
-            int dotPosition = fileId.lastIndexOf('.');
-            String extension = fileId.substring(dotPosition);
+        int dotPosition = fileId.lastIndexOf('.');
+        if (dotPosition == -1 || dotPosition == fileId.length() - 1) {
+            resp.setStatus(400);
+            resp.getWriter().write("fileId must contain a valid extension");
+            return;
+        }
+
+        String extension = fileId.substring(dotPosition);
+        if (isBlacklistedExtension(extension)) {
+            resp.setStatus(400);
+            resp.getWriter().write("Invalid file extension");
+            return;
+        }
+
+        try (InputStream reader = storageService.get(fileId)) {
             resp.setContentType(mimeByExtension(extension));
 
             OutputStream writer = resp.getOutputStream();
@@ -42,12 +58,22 @@ public class StorageServlet extends HttpServlet {
 
         } catch (IOException e) {
             resp.setStatus(404);
+            resp.getWriter().write("File not found");
         }
     }
 
-    private String mimeByExtension(String extension) {
-        switch (extension) {
+    private boolean isBlacklistedExtension(String extension) {
+        String[] blacklistedExtensions = {".exe", ".php", ".py", ".cgi"};
+        for (String blacklisted : blacklistedExtensions) {
+            if (extension.equalsIgnoreCase(blacklisted)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    private String mimeByExtension(String extension) {
+        switch (extension.toLowerCase()) {
             case ".jpg":
                 extension = ".jpeg";
             case ".jpeg":
@@ -67,6 +93,12 @@ public class StorageServlet extends HttpServlet {
             case ".js":
             case ".mjs":
                 return "text/javascript";
+
+            case ".json":
+                return "application/json";
+
+            case ".pdf":
+                return "application/pdf";
 
             default:
                 return "application/octet-stream";
