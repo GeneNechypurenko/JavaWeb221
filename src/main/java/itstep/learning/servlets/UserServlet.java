@@ -102,8 +102,8 @@ public class UserServlet extends HttpServlet {
         String jwtToken = jwtHeader + "." + jwtPayload + "." + jwtSignature;
 
         restResponse.setStatus(200)
-                .setData(new UserAuthViewModel(user, userAccess, token))
-                // .setData(new UserAuthJwtModel(user, jwtToken))
+                // .setData(new UserAuthViewModel(user, userAccess, token))
+                .setData(new UserAuthJwtModel(user, jwtToken))
                 .setCacheTime(600);
         restService.sendJson(resp, restResponse);
     }

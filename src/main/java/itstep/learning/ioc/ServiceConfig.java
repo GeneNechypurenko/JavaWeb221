@@ -7,12 +7,16 @@ import itstep.learning.services.datetime.CurrentDateTimeService;
 import itstep.learning.services.datetime.DateTimeService;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.db.MySqlDbService;
+import itstep.learning.services.form_parse.FormParseService;
+import itstep.learning.services.form_parse.MixedFormParseService;
 import itstep.learning.services.hash.HashService;
 import itstep.learning.services.hash.Md5HashService;
 import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.kdf.PbKdf1Service;
 import itstep.learning.services.random.RandomService;
 import itstep.learning.services.random.UtilRandomService;
+import itstep.learning.services.storage.DiskStorageService;
+import itstep.learning.services.storage.StorageService;
 
 
 public class ServiceConfig extends AbstractModule {
@@ -25,5 +29,7 @@ public class ServiceConfig extends AbstractModule {
         bind(DbService.class).to(MySqlDbService.class);
         bind(DateTimeService.class).to(CurrentDateTimeService.class);
         bind(ConfigService.class).to(JsonConfigService.class);
+        bind(FormParseService.class).to(MixedFormParseService.class);
+        bind(StorageService.class).to(DiskStorageService.class);
     }
 }
