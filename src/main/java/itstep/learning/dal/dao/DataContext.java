@@ -11,11 +11,15 @@ public class DataContext {
 
     private final UserDao userDao;
     private final AccessTokenDao accessTokenDao;
+    private final CategoryDao categoryDao;
+    private final ProductDao productDao;
 
     @Inject
     public DataContext(Injector injector) throws SQLException {
-        userDao = injector.getInstance(UserDao.class) ;
-        accessTokenDao = injector.getInstance(AccessTokenDao.class) ;
+        userDao = injector.getInstance(UserDao.class);
+        accessTokenDao = injector.getInstance(AccessTokenDao.class);
+        categoryDao = injector.getInstance(CategoryDao.class);
+        productDao = injector.getInstance(ProductDao.class);
     }
 
     public UserDao getUserDao() {
@@ -25,4 +29,8 @@ public class DataContext {
     public AccessTokenDao getAccessTokenDao() {
         return accessTokenDao;
     }
+
+    public CategoryDao getCategoryDao() {return categoryDao;}
+
+    public ProductDao getProductDao() {return productDao;}
 }

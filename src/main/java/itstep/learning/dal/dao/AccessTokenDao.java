@@ -96,7 +96,7 @@ public class AccessTokenDao {
             stmt.setString(1, accessTokenId.toString());
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                extendAccessTokenValidity(accessTokenId); // Продлеваем срок действия токена
+                extendAccessTokenValidity(accessTokenId);
                 return UserAccess.fromResultSet(rs);
             }
         } catch (SQLException e) {
