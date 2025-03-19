@@ -62,7 +62,8 @@ public class HomeServlet extends HttpServlet {
                 && dataContext.getAccessTokenDao().installTables()
                 && dataContext.getCategoryDao().installTables()
                 && dataContext.getProductDao().installTable()
-               // && dataContext.getCategoryDao().seedData()
+                // && dataContext.getCategoryDao().seedData()
+                && dataContext.getCartDao().installTables()
                 ? "Install OK" : "Install Failed";
 
         restService.sendJson(resp, new RestResponse()

@@ -5,11 +5,8 @@ import com.google.inject.Singleton;
 import itstep.learning.dal.dto.Product;
 import itstep.learning.services.db.DbService;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.UUID;
+import java.sql.*;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,4 +76,22 @@ public class ProductDao {
         }
         return false;
     }
+
+    public Map<UUID, Integer> getProductsCountByCategories() {
+        String sql = "SELECT category_id, COUNT(*) AS product_count FROM products GROUP BY category_id";
+        Map<UUID, Integer> categoryProductCounts = new HashMap<>();
+
+        try (Statement statement = dbService.getConnection().createStatement();
+             ResultSet rs = statement.executeQuery(sql)) {
+            while (rs.next()) {
+                UUID categoryId = UUID.fromString(rs.getString("category_id"));
+                int productCount = rs.getInt("product_count");
+                categoryProductCounts.put(categoryId, productCount);
+            }
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "ProductDao::getProductsCountByCategories {0}, sql: {1}", new Object[]{e.getMessage(), sql});
+        }
+        return categoryProductCounts;
+    }
+
 }

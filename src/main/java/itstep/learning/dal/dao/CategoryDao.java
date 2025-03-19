@@ -3,8 +3,10 @@ package itstep.learning.dal.dao;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dto.Category;
+import itstep.learning.dal.dto.Product;
 import itstep.learning.services.db.DbService;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -21,6 +23,36 @@ public class CategoryDao {
     public CategoryDao(DbService dbService, Logger logger) {
         this.dbService = dbService;
         this.logger = logger;
+    }
+
+    public Category getCategoryBySlug(String slug) {
+        if (slug == null || slug.equals("")) {
+            return null;
+        }
+        Category category = null;
+        String sql = "SELECT * FROM categories c " +
+                "LEFT JOIN products p " +
+                "ON c.category_id = p.category_id " +
+                "WHERE c.category_slug = ?";
+
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setString(1, slug);
+            ResultSet rs = prep.executeQuery();
+            if (rs.next()) {
+                category = Category.fromResultSet(rs);
+                List<Product> products = new ArrayList<>();
+                do {
+                    try {
+                        products.add(Product.fromResultSet(rs));
+                    } catch (Exception ignored) {
+                    }
+                } while (rs.next());
+                category.setProducts(products);
+            }
+        } catch (SQLException e) {
+            logger.warning("CategoryDao::getCategoryBySlug: " + e.getMessage());
+        }
+        return category;
     }
 
     public boolean seedData() {
@@ -42,9 +74,9 @@ public class CategoryDao {
     public boolean installTables() {
         String sql = "CREATE TABLE IF NOT EXISTS categories("
                 + "category_id CHAR(36) PRIMARY KEY DEFAULT(UUID()), "
+                + "category_title VARCHAR(64) NOT NULL, "
+                + "category_description VARCHAR(256) NOT NULL, "
                 + "category_slug VARCHAR(64) NOT NULL, "
-                + "category_title VARCHAR(256) NOT NULL, "
-                + "category_description VARCHAR(64) NOT NULL, "
                 + "category_image_id VARCHAR(64) NOT NULL, "
                 + "category_delete_moment DATETIME NULL, "
                 + "UNIQUE(category_slug) "
@@ -64,9 +96,9 @@ public class CategoryDao {
         List<Category> result = new ArrayList<>();
 
         String sql = "SELECT * FROM categories";
-        try(Statement stmt = dbService.getConnection().createStatement()){
+        try (Statement stmt = dbService.getConnection().createStatement()) {
             ResultSet rs = stmt.executeQuery(sql);
-            while (rs.next()){
+            while (rs.next()) {
                 result.add(Category.fromResultSet(rs));
             }
         } catch (SQLException e) {

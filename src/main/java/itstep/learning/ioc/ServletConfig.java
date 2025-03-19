@@ -19,5 +19,6 @@ public class ServletConfig extends ServletModule {
         serve("/random").with(RandomServlet.class);
         serve("/product").with(ProductServlet.class);
         serve("/storage/*").with(StorageServlet.class);
+        serve("/cart").with(CartServlet.class);
     }
 }

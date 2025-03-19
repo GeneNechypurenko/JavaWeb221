@@ -1,6 +1,7 @@
 package itstep.learning.rest;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -8,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 
 public class RestService {
 
-    public final Gson gson = new Gson();
+    public final Gson gson = new GsonBuilder().serializeNulls().create();
 
     public void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
         resp.setContentType("application/json");

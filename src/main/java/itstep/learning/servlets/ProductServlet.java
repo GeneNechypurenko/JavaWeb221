@@ -3,6 +3,7 @@ package itstep.learning.servlets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.Category;
 import itstep.learning.dal.dto.Product;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
@@ -17,8 +18,7 @@ import org.apache.commons.fileupload2.core.FileItem;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Singleton
 public class ProductServlet extends HttpServlet {
@@ -118,29 +118,89 @@ public class ProductServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String type = req.getParameter("type");
-        if ("categories".equals(type)) {         //  product?type=categories
+        if ("categories".equals(type)) {           //  product?type=categories
             getCategories(req, resp);
         } else if ("category".equals(type)) {      //  product?type=category&id=....
             getCategory(req, resp);
         } else if ("product".equals(type)) {
             getProducts(req, resp);
         }
+        else if ("category-count".equals(type)) {  // product?type=category-count
+            getProductsCountByCategories(req, resp);
+        }
     }
 
     private void getCategory(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String slug = req.getParameter("slug");
+        Category category;
+        RestResponse restResponse = new RestResponse()
+                .setResourceUrl("GET /product?type=category&slug=" + slug)
+                .setMetadata(Map.of("dataType", "object"))
+                .setStatus(200)
+                .setCacheTime(86400);
+        try {
+            category = dataContext.getCategoryDao().getCategoryBySlug(slug);
+        } catch (RuntimeException e) {
+            restService.sendJson(resp, restResponse
+                    .setStatus(500)
+                    .setData("Error while getting category: " + slug + ": " + e.getMessage()));
+            return;
+        }
+        if (category == null) {
+            restService.sendJson(resp, restResponse.setStatus(404).setData("Category not found"));
+            return;
+        }
+
+        String imgPath = getStoragePath(req);
+
+        category.setCategoryImageId(imgPath + category.getCategoryImageId());
+        for (Product p : category.getProducts()) {
+            p.setProductImageId(imgPath + p.getProductImageId());
+        }
+
+        restService.sendJson(resp, restResponse.setStatus(200).setData(category));
     }
 
     private void getCategories(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String imgPath = getStoragePath(req);
+
+        List<Category> categories = dataContext.getCategoryDao().getList();
+        for (Category c : categories) {
+            c.setCategoryImageId(imgPath + c.getCategoryImageId());
+        }
+
         restService.sendJson(resp, new RestResponse()
                 .setResourceUrl("GET /product?type=categories")
                 .setMetadata(Map.of("dataType", "array"))
                 .setStatus(200)
                 .setCacheTime(86400)
-                .setData(dataContext.getCategoryDao().getList())
+                .setData(categories)
         );
     }
 
     private void getProducts(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    }
+
+    private void getProductsCountByCategories(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        Map<UUID, Integer> categoryCounts = dataContext.getProductDao().getProductsCountByCategories();
+
+        RestResponse restResponse = new RestResponse()
+                .setResourceUrl("GET /product?type=category-count")
+                .setMetadata(Map.of("dataType", "map"))
+                .setStatus(200)
+                .setCacheTime(86400)
+                .setData(categoryCounts);
+
+        restService.sendJson(resp, restResponse);
+    }
+
+    private String getStoragePath(HttpServletRequest req) {
+        return String.format(Locale.ROOT,
+                "%s://%s:%d%s/storage/",
+                req.getScheme(),
+                req.getServerName(),
+                req.getServerPort(),
+                req.getContextPath());
     }
 
     @Override
