@@ -9,15 +9,6 @@ public class UserAuthViewModel {
     private UserAccess userAccess;
     private AccessToken accessToken;
     private Cart cart;
-    private List<CartItem> cartItems;
-
-    public List<CartItem> getCartItems() {
-        return cartItems;
-    }
-
-    public void setCartItems(List<CartItem> cartItems) {
-        this.cartItems = cartItems;
-    }
 
     public UserAccess getUserAccess() {
         return userAccess;
@@ -38,13 +29,12 @@ public class UserAuthViewModel {
     public UserAuthViewModel() {
     }
 
-    public UserAuthViewModel(User user, UserAccess userAccess, AccessToken accessToken, Cart cart, List<CartItem> cartItems)
+    public UserAuthViewModel(User user, UserAccess userAccess, AccessToken accessToken, Cart cart)
     {
         this.user = user;
         this.userAccess = userAccess;
         this.accessToken = accessToken;
         this.cart = cart;
-        this.cartItems = cartItems;
     }
 
     public User getUser() {

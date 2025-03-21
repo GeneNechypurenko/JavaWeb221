@@ -63,7 +63,8 @@ public class CartServlet extends HttpServlet {
 
         Cart cart = dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), true);
         if(dataContext.getCartDao().addToCart(cart, product)) {
-            restService.sendJson(resp, restResponse.setStatus(202).setData("Accepted"));
+            cart = dataContext.getCartDao().getCart(cart.getCartId());
+            restService.sendJson(resp, restResponse.setStatus(202).setData(cart));
         }else {
             restService.sendJson(resp, restResponse.setStatus(500).setData("See server logs"));
         }

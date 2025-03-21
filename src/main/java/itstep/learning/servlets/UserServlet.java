@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
 import itstep.learning.dal.dto.AccessToken;
+import itstep.learning.dal.dto.Cart;
 import itstep.learning.dal.dto.User;
 import itstep.learning.dal.dto.UserAccess;
 import itstep.learning.models.UserAuthJwtModel;
@@ -101,13 +102,13 @@ public class UserServlet extends HttpServlet {
         );
         String jwtToken = jwtHeader + "." + jwtPayload + "." + jwtSignature;
 
-        UUID cartId = dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), false).getCartId();
+        Cart activeCart = dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), false);
+        if(activeCart != null) {
+            activeCart = dataContext.getCartDao().getCart(activeCart.getCartId());
+        }
 
         restResponse.setStatus(200)
-                .setData(new UserAuthViewModel(user, userAccess, token,
-                        dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), false),
-                        dataContext.getCartDao().getUserCartItems(cartId)))
-                // .setData(new UserAuthJwtModel(user, jwtToken))
+                .setData(new UserAuthViewModel(user, userAccess, token, activeCart))
                 .setCacheTime(600);
         restService.sendJson(resp, restResponse);
     }

@@ -84,29 +84,24 @@ public class CartDao {
             logger.info("CartDao::installCarts OK");
             return true;
         } catch (SQLException ex) {
-            logger.log(Level.WARNING, "CartDao::installCarts {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
+            logger.log(Level.WARNING, "CartDao::installCarts {0} sql: {1}", new Object[]{ex.getMessage(), sql});
         }
         return false;
     }
 
-    public List<CartItem> getUserCartItems(UUID cartId) {
-
-        String sql = String.format(Locale.ROOT,
-                "SELECT * FROM cart_items WHERE cart_id = '%s'", cartId.toString());
-        List<CartItem> cartItems = new ArrayList<>();
-
-        try (Statement stmt = dbService.getConnection().createStatement()) {
-            ResultSet rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                cartItems.add(CartItem.fromResultSet(rs));
+    public Cart getCart(UUID cartId) {
+        String sql = "SELECT * FROM cart c JOIN cart_items ci ON c.cart_id = ci.cart_id WHERE ci.cart_id = ? ";
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setString(1, cartId.toString());
+            ResultSet rs = prep.executeQuery();
+            if(rs.next()) {
+                return Cart.fromResultSet(rs);
             }
-        } catch (SQLException e) {
-            logger.log(Level.WARNING, "CartDao::getUserCartItems {0} sql: {1}",
-                    new Object[]{e.getMessage(), sql});
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "CartDao::getCart {0} sql: {1}", new Object[]{ex.getMessage(), sql});
         }
-        return cartItems;
+        return null;
     }
-
 
     public Cart getUserCart(UUID userAccessId, boolean createNew) {
         String sql = String.format(Locale.ROOT,
@@ -147,10 +142,12 @@ public class CartDao {
             prep.setString(1, cart.getCartId().toString());
             prep.setString(2, product.getProductId().toString());
             ResultSet rs = prep.executeQuery();
+            double addedPrice = product.getProductPrice();;
             if (rs.next()) {
                 cartItem = CartItem.fromResultSet(rs);
                 cartItem.setQuantity(cartItem.getQuantity() + 1);
                 cartItem.setCartItemPrice(cartItem.getCartItemPrice() + product.getProductPrice());
+                cart.setCartPrice(cart.getCartPrice() + addedPrice);
                 isNew = false;
             } else {
                 cartItem = new CartItem();
@@ -158,7 +155,7 @@ public class CartDao {
                 cartItem.setCartId(cart.getCartId());
                 cartItem.setProductId(product.getProductId());
                 cartItem.setQuantity(1);
-                cartItem.setCartItemPrice(product.getProductPrice());
+                cartItem.setCartItemPrice(addedPrice);
                 isNew = true;
             }
         } catch (SQLException ex) {
@@ -177,12 +174,22 @@ public class CartDao {
             prep.setDouble(4, cartItem.getCartItemPrice());
             prep.setString(5, cartItem.getCartItemId().toString());
             prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "CartDao::addToCart {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
+            return false;
+        }
+
+        sql = "UPDATE cart SET cart_price = ? WHERE cart_id = ?";
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setDouble(1, cart.getCartPrice());
+            prep.setString(2, cart.getCartId().toString());
+            prep.executeUpdate();
             dbService.getConnection().commit();
         } catch (SQLException ex) {
             logger.log(Level.WARNING, "CartDao::addToCart {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
             return false;
         }
 
-        return isNew;
+        return true;
     }
 }
