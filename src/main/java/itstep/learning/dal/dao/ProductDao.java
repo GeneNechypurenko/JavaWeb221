@@ -94,4 +94,17 @@ public class ProductDao {
         return categoryProductCounts;
     }
 
+    public Product getProductById(UUID productId) {
+        String sql = "SELECT * FROM products p WHERE p.product_id = ?";
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setString(1, productId.toString());
+            ResultSet rs = prep.executeQuery();
+            if (rs.next()) {
+                return Product.fromResultSet(rs);
+            }
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "ProductDao::getProductById {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
+        }
+        return null;
+    }
 }

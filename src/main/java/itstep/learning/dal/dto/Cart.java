@@ -17,7 +17,7 @@ public class Cart {
         Cart cart = new Cart();
         cart.setCartId(UUID.fromString(rs.getString("cart_id")));
         cart.setUserAccessId(UUID.fromString(rs.getString("user_access_id")));
-        cart.setIsCartCanceled(rs.getByte("is_cart_canceled"));
+        cart.setIsCartCanceled(rs.getByte("cart_is_canceled"));
         cart.setCartPrice(rs.getDouble("cart_price"));
         cart.setCartCreatedAt(rs.getDate("cart_created_at"));
         java.sql.Timestamp timestamp = rs.getTimestamp( "cart_closed_in" ) ;

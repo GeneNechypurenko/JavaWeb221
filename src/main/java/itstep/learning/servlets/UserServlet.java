@@ -101,9 +101,12 @@ public class UserServlet extends HttpServlet {
         );
         String jwtToken = jwtHeader + "." + jwtPayload + "." + jwtSignature;
 
+        UUID cartId = dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), false).getCartId();
+
         restResponse.setStatus(200)
-                .setData(new UserAuthViewModel(user, userAccess, token, dataContext.getCartDao()
-                        .getUserCart(userAccess.getUserAccessId(), false)))
+                .setData(new UserAuthViewModel(user, userAccess, token,
+                        dataContext.getCartDao().getUserCart(userAccess.getUserAccessId(), false),
+                        dataContext.getCartDao().getUserCartItems(cartId)))
                 // .setData(new UserAuthJwtModel(user, jwtToken))
                 .setCacheTime(600);
         restService.sendJson(resp, restResponse);

@@ -1,15 +1,23 @@
 package itstep.learning.models;
 
-import itstep.learning.dal.dto.AccessToken;
-import itstep.learning.dal.dto.Cart;
-import itstep.learning.dal.dto.User;
-import itstep.learning.dal.dto.UserAccess;
+import itstep.learning.dal.dto.*;
+
+import java.util.List;
 
 public class UserAuthViewModel {
     private User user;
     private UserAccess userAccess;
     private AccessToken accessToken;
     private Cart cart;
+    private List<CartItem> cartItems;
+
+    public List<CartItem> getCartItems() {
+        return cartItems;
+    }
+
+    public void setCartItems(List<CartItem> cartItems) {
+        this.cartItems = cartItems;
+    }
 
     public UserAccess getUserAccess() {
         return userAccess;
@@ -30,12 +38,13 @@ public class UserAuthViewModel {
     public UserAuthViewModel() {
     }
 
-    public UserAuthViewModel(User user, UserAccess userAccess, AccessToken accessToken, Cart cart)
+    public UserAuthViewModel(User user, UserAccess userAccess, AccessToken accessToken, Cart cart, List<CartItem> cartItems)
     {
         this.user = user;
         this.userAccess = userAccess;
         this.accessToken = accessToken;
         this.cart = cart;
+        this.cartItems = cartItems;
     }
 
     public User getUser() {
